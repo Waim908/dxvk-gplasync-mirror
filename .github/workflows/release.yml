@@ -10,36 +10,66 @@ jobs:
       - name: check out
         uses: actions/checkout@v4
 
-      - name: clone
+      - name: clone and process
         id: dxvkVer
         run: |
+          # 导入版本信息
           . ALL_VERSION.sh
           needVer=()
           git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
           cd dxvk-gplasync/
           releasesVer=($(ls releases))
-          for ver_num in "${!releasesVer[@]}"; do
-            if [[ ${allVersion[*]} =~ ${releasesVer[$ver_num]} ]]; then
-              echo "找到 ${releasesVer[$ver_num]}"
-            else
-              echo "未找到 ${releasesVer[$ver_num]}"
-              needVer=+("${releasesVer[$ver_num]}")
+          
+          # 修复的版本比较逻辑
+          for current_ver in "${releasesVer[@]}"; do
+            found=false
+            for existing_ver in "${allVersion[@]}"; do
+              if [[ "$existing_ver" == "$current_ver" ]]; then
+                found=true
+                echo "找到 $current_ver"
+                break
+              fi
+            done
+            if ! $found; then
+              echo "未找到 $current_ver"
+              needVer+=("$current_ver")
             fi
           done
-          cd releases
-          echo "version=${needVer[@]}" >> $GITHUB_OUTPUT
           
+          # 检查是否有新版本需要处理
+          if [ ${#needVer[@]} -eq 0 ]; then
+            echo "没有新版本需要发布"
+            echo "version=none" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          cd releases
+          echo "需要发布的版本: ${needVer[@]}"
+          echo "version=${needVer[*]}" >> $GITHUB_OUTPUT
+          
+          # 复制文件到临时目录
+          mkdir -p /tmp/releases/
+          for ver in "${needVer[@]}"; do
+            if [ -d "$ver" ]; then
+              cp -r "$ver" /tmp/releases/
+            elif [ -f "$ver" ]; then
+              cp "$ver" /tmp/releases/
+            else
+              echo "警告: $ver 不是文件或目录"
+            fi
+          done
+
       - name: create release
+        if: steps.dxvkVer.outputs.version != 'none'
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ steps.dxvkVer.outputs.version }}
+          name: Release ${{ steps.dxvkVer.outputs.version }}
           draft: false
           prerelease: false
           tag_name: ${{ steps.dxvkVer.outputs.version }}
-          body: ${{ steps.dxvkVer.outputs.version }}
-          files: |
+          body: |
             ${{ steps.dxvkVer.outputs.version }}
+          files: |
+            /tmp/releases/*
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
