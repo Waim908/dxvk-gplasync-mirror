@@ -10,7 +10,9 @@ jobs:
       - name: check out
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: clone and process
         id: dxvkVer
@@ -23,6 +25,8 @@ jobs:
             echo "allVersion=()" > ALL_VERSION.sh
           fi
           
+          echo "$(pwd)"
+
           needVer=()
           git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
           cd dxvk-gplasync/
@@ -93,12 +97,7 @@ jobs:
           echo "allVersion=(${allVersion[@]})" > ALL_VERSION.sh
           echo "更新后的版本: ${allVersion[@]}"
           
-          # 推送到仓库
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add ALL_VERSION.sh
-          git commit -m "chore: 更新版本列表 - 添加新版本: ${{ steps.dxvkVer.outputs.version }}"
-          git push
+
 
       - name: create release
         if: steps.dxvkVer.outputs.version != 'none'
