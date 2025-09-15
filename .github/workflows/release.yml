@@ -1,0 +1,45 @@
+name: Download and Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out
+        uses: actions/checkout@v4
+
+      - name: clone
+        id: dxvkVer
+        run: |
+          . ALL_VERSION.sh
+          needVer=()
+          git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
+          cd dxvk-gplasync/
+          releasesVer=($(ls releases))
+          for ver_num in "${!releasesVer[@]}"; do
+            if [[ ${allVersion[*]} =~ ${releasesVer[$ver_num]} ]]; then
+              echo "找到 ${releasesVer[$ver_num]}"
+            else
+              echo "未找到 ${releasesVer[$ver_num]}"
+              needVer=+("${releasesVer[$ver_num]}")
+            fi
+          done
+          cd releases
+          echo "version=${needVer[@]}" >> $GITHUB_OUTPUT
+          
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.dxvkVer.outputs.version }}
+          draft: false
+          prerelease: false
+          tag_name: ${{ steps.dxvkVer.outputs.version }}
+          body: ${{ steps.dxvkVer.outputs.version }}
+          files: |
+            ${{ steps.dxvkVer.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+
