@@ -1,8 +1,8 @@
 name: Download and Release
 
 on:
-  workflow_dispatch:
-
+   schedule:
+    - cron: '0 0 * * *'
 jobs:
   Download:
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
             exit 1
           fi
 
-          echo "ALL_VERSION.sh: {$allVersion[@]}"
+          echo "ALL_VERSION.sh: ${allVersion[@]}"
 
           cd /tmp
           needVer=()
@@ -76,30 +76,17 @@ jobs:
               echo "警告: $ver 不是文件或目录"
             fi
           done
-
-      - name: update version file and push
-        if: steps.dxvkVer.outputs.version != 'none'
-        run: |
-          new_versions=(${{ steps.dxvkVer.outputs.version }})
-          echo "新版本: ${new_versions[@]}"
-
-          # 合并版本数组（去重）
-          for new_ver in "${new_versions[@]}"; do
-            if [[ ! " ${allVersion[@]} " =~ " $new_ver " ]]; then
-              allVersion+=("$new_ver")
-            fi
-          done
           
           # 写入新的版本文件
           # cd /home/runner/work/dxvk-gplasync-mirror/dxvk-gplasync-mirror
-          echo "allVersion=(${allVersion[@]})" > /tmp/ALL_VERSION.sh
+          echo "allVersion=(${releasesVer[@]})" > /tmp/ALL_VERSION.sh
           
 
       - name: create release
         if: steps.dxvkVer.outputs.version != 'none'
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ steps.dxvkVer.outputs.version }}
+          name: ${{ steps.dxvkVer.outputs.version }}
           draft: false
           prerelease: false
           tag_name: ${{ steps.dxvkVer.outputs.version }}
