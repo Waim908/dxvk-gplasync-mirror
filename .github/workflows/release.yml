@@ -92,7 +92,6 @@ jobs:
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git commit -a -m "update ${{ steps.dxvkVer.outputs.version }}"
-          git remote https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/Waim908/dxvk-gplasync-mirror.git
           git push
 
       - name: create release
