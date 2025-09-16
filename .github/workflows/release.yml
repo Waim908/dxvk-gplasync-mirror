@@ -87,16 +87,13 @@ jobs:
           echo "allVersion=(${allVersion[@]})" > ALL_VERSION.sh
           echo "更新后的版本: ${allVersion[@]}"
     
-      - name: Commit files
+      - name: Commit and Push
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git commit -a -m "update ${{ steps.dxvkVer.outputs.version }}"
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          branch: ${{ github.ref }}
+          git remote https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/Waim908/dxvk-gplasync-mirror.git
+          git push
 
       - name: create release
         if: steps.dxvkVer.outputs.version != 'none'
