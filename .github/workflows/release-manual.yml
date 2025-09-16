@@ -1,0 +1,99 @@
+name: Download and Release
+
+on:
+    workflow_dispatch:
+jobs:
+  Download:
+    runs-on: ubuntu-latest
+    steps:
+      - name: chceck version (Download ALL_VERSION.sh latest)
+        run: |
+          # github api
+          cd /tmp
+          repo="https://api.github.com/repos/Waim908/dxvk-gplasync-mirror"
+          get_dl_url="$(curl $repo/releases/latest | grep "browser_download_url" | grep ALL_VERSION.sh | sed 's/.*"browser_download_url": "\(.*\)".*/\1/')"
+          if [[ -z $get_dl_url ]]; then
+            echo "get URL faild"
+            exit 1
+          fi
+          wget -O ALL_VERSION.sh "$get_dl_url"
+
+      - name: clone
+        id: dxvkVer
+        run: |
+          . /tmp/ALL_VERSION.sh
+
+          if [[ -z ${allVersion[@]} ]]; then
+            echo "\$allVersion is empty"
+            exit 1
+          fi
+
+          echo "ALL_VERSION.sh: ${allVersion[@]}"
+
+          cd /tmp
+          needVer=()
+          git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
+          tar -I 'xz -T$(nproc)' -cf /tmp/source-code.tar.xz dxvk-gplasync/
+          cd dxvk-gplasync/
+          releasesVer=($(ls releases))
+          
+          # 修复的版本比较逻辑
+          for current_ver in "${releasesVer[@]}"; do
+            found=false
+            for existing_ver in "${allVersion[@]}"; do
+              if [[ "$existing_ver" == "$current_ver" ]]; then
+                found=true
+                echo "找到 $current_ver"
+                break
+              fi
+            done
+            if ! $found; then
+              echo "未找到 $current_ver"
+              needVer+=("$current_ver")
+            fi
+          done
+          
+          # 检查是否有新版本需要处理
+          if [ ${#needVer[@]} -eq 0 ]; then
+            echo "没有新版本需要发布"
+            echo "version=none" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          cd releases
+          echo "需要发布的版本: ${needVer[@]}"
+          echo "version=${needVer[*]}" >> $GITHUB_OUTPUT
+          
+          # 复制文件到临时目录
+          mkdir -p /tmp/releases/
+          for ver in "${needVer[@]}"; do
+            if [ -d "$ver" ]; then
+              cp -r "$ver" /tmp/releases/
+            elif [ -f "$ver" ]; then
+              cp "$ver" /tmp/releases/
+            else
+              echo "警告: $ver 不是文件或目录"
+            fi
+          done
+          
+          # 写入新的版本文件
+          # cd /home/runner/work/dxvk-gplasync-mirror/dxvk-gplasync-mirror
+          echo "allVersion=(${releasesVer[@]})" > /tmp/ALL_VERSION.sh
+          
+
+      - name: create release
+        if: steps.dxvkVer.outputs.version != 'none'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.dxvkVer.outputs.version }}
+          draft: false
+          prerelease: false
+          tag_name: ${{ steps.dxvkVer.outputs.version }}
+          body: |
+            ${{ steps.dxvkVer.outputs.version }}
+          files: |
+            /tmp/releases/*
+            /tmp/source-code.tar.xz
+            /tmp/ALL_VERSION.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

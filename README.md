@@ -2,5 +2,12 @@
 
 *source-code.tar.xz* <= 总是最新的源码包，随发布日期变化
 
+# Action
+
+```release.yml``` <= 每日 0:00自动触发，如果有新版本就发布
+
+```release-manual.yml``` <= 手动触发
+
+
 # Thanks
 [Ph42oN/dxvk-gplasync](https://gitlab.com/Ph42oN/dxvk-gplasync)
