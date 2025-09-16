@@ -1,4 +1,4 @@
-name: Download and Release
+name: Download and Release(Auto)
 
 on:
    schedule:
