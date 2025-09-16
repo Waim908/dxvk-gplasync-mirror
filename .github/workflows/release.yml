@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  dl:
+  Download:
     runs-on: ubuntu-latest
     steps:
       - name: check out
@@ -16,18 +16,12 @@ jobs:
       - name: clone and process
         id: dxvkVer
         run: |
-          # 导入现有的版本信息
-          if [ -f ALL_VERSION.sh ]; then
-            . ALL_VERSION.sh
-          else
-            allVersion=()
-            echo "allVersion=()" > ALL_VERSION.sh
-          fi
-          
-          echo "$(pwd)"
+          # echo "$(pwd)"
+          cd /tmp
 
           needVer=()
           git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
+          tar -I 'xz -T$(nproc)' -cvf /tmp/source-code.tar.xz dxvk-gplasync
           cd dxvk-gplasync/
           releasesVer=($(ls releases))
           
@@ -88,15 +82,21 @@ jobs:
             fi
           done
           
-          # 排序版本（可选）
-          # IFS=$'\n' allVersion=($(sort -V <<<"${allVersion[*]}"))
-          # unset IFS
-          
           # 写入新的版本文件
+          cd /home/runner/work/dxvk-gplasync-mirror/dxvk-gplasync-mirror
           echo "allVersion=(${allVersion[@]})" > ALL_VERSION.sh
           echo "更新后的版本: ${allVersion[@]}"
-          
-
+    
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -a -m "update ${{ steps.dxvkVer.outputs.version }}"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          branch: ${{ github.ref }}
 
       - name: create release
         if: steps.dxvkVer.outputs.version != 'none'
@@ -110,5 +110,6 @@ jobs:
             ${{ steps.dxvkVer.outputs.version }}
           files: |
             /tmp/releases/*
+            /tmp/source-code.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
