@@ -7,21 +7,28 @@ jobs:
   Download:
     runs-on: ubuntu-latest
     steps:
-      - name: check out
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
-          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+      - name: chceck version (Download ALL_VERSION.sh latest)
+        run: |
+          # github api
+          repo="https://api.github.com/repos/Waim908/dxvk-gplasync-mirror"
+          get_dl_url=(curl $repo/releases/latest | grep "browser_download_url" | grep ALL_VERSION.sh | sed 's/.*"browser_download_url": "\(.*\)".*/\1/')
+          if [[ -z $get_dl_url ]]; then
+            echo "get URL faild"
+            exit 1
+          fi
+          wget -O ALL_VERSION.sh "$get_dl_url"
+          . ALL_VERSION.sh
+          if [[ -z ${allVersion[@]} ]]; then
+            echo "\$allVersion is empty"
+          fi
 
-      - name: clone and process
+      - name: clone
         id: dxvkVer
         run: |
-          # echo "$(pwd)"
           cd /tmp
-
           needVer=()
           git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
-          tar -I 'xz -T$(nproc)' -cvf /tmp/source-code.tar.xz dxvk-gplasync
+          tar -I 'xz -T$(nproc)' -cf /tmp/source-code.tar.xz dxvk-gplasync/
           cd dxvk-gplasync/
           releasesVer=($(ls releases))
           
@@ -83,16 +90,9 @@ jobs:
           done
           
           # 写入新的版本文件
-          cd /home/runner/work/dxvk-gplasync-mirror/dxvk-gplasync-mirror
-          echo "allVersion=(${allVersion[@]})" > ALL_VERSION.sh
-          echo "更新后的版本: ${allVersion[@]}"
-    
-      - name: Commit and Push
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit -a -m "update ${{ steps.dxvkVer.outputs.version }}"
-          git push
+          # cd /home/runner/work/dxvk-gplasync-mirror/dxvk-gplasync-mirror
+          echo "allVersion=(${allVersion[@]})" > /tmp/ALL_VERSION.sh
+          
 
       - name: create release
         if: steps.dxvkVer.outputs.version != 'none'
@@ -107,5 +107,6 @@ jobs:
           files: |
             /tmp/releases/*
             /tmp/source-code.tar.xz
+            /tmp/ALL_VERSION.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
