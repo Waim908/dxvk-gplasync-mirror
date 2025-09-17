@@ -4,7 +4,7 @@
 
 # Action
 
-```release.yml``` <= 每日 0:00自动触发，如果有新版本就发布
+```release.yml``` <= 每日 0:00（UTC）自动触发，如果有新版本就发布
 
 ```release-manual.yml``` <= 手动触发
 
