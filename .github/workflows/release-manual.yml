@@ -11,7 +11,7 @@ jobs:
           # github api
           cd /tmp
           repo="https://api.github.com/repos/Waim908/dxvk-gplasync-mirror"
-          get_dl_url="$(curl $repo/releases/latest | grep "browser_download_url" | grep ALL_VERSION.sh | sed 's/.*"browser_download_url": "\(.*\)".*/\1/')"
+          get_dl_url="$(curl -sSL $repo/releases/latest | grep "browser_download_url" | grep ALL_VERSION.sh | sed 's/.*"browser_download_url": "\(.*\)".*/\1/')"
           if [[ -z $get_dl_url ]]; then
             echo "get URL faild"
             exit 1
