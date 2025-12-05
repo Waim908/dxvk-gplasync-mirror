@@ -9,5 +9,11 @@
 ```release-manual.yml``` <= 手动触发
 
 
+# others
+
+防止禁用
+
+2025.12.5
+
 # Thanks
 [Ph42oN/dxvk-gplasync](https://gitlab.com/Ph42oN/dxvk-gplasync)
