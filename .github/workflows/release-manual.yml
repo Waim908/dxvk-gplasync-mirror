@@ -33,7 +33,7 @@ jobs:
           cd /tmp
           needVer=()
           git clone https://gitlab.com/Ph42oN/dxvk-gplasync.git 
-          tar -I 'xz -T$(nproc)' -cf /tmp/source-code.tar.xz dxvk-gplasync/
+          tar -I 'xz -T$(nproc) -9' -cf /tmp/source-code.tar.xz dxvk-gplasync/
           cd dxvk-gplasync/
           releasesVer=($(ls releases))
           
